@@ -1,27 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>지도 생성하기</title>
-    
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; }
+    </style>
 </head>
 <body>
-<!-- 지도를 표시할 div 입니다 -->
-<div id="map" style="width:100%;height:350px;"></div>
-<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=1746ca986f7fd0be550c53d6b50ed05c"></script>
+    <!-- 지도를 표시할 div 입니다 -->
+<div id="map" style="width:100%;height:100vh;"></div>
 
+<!--&libraries=clusterer가 추가되었습니다. 여러 마커를 하나의 원형 숫자 마커로 묶는 기능을 불러옵니다.-->
+<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=1746ca986f7fd0be550c53d6b50ed05c&libraries=clusterer"></script>
 <script>
-var mapContainer = document.getElementById('map'), // 지도를 표시할 div 
-    mapOption = { 
-        center: new kakao.maps.LatLng(33.450701, 126.570667), // 지도의 중심좌표
+const LAT = 35.1468209;
+const LNG = 129.0112424;
+var mapContainer = document.getElementById('map'), // 지도를 표시할 div
+    mapOption = {
+        center: new kakao.maps.LatLng(LAT, LNG), // 지도의 중심좌표
         level: 3 // 지도의 확대 레벨
     };
 
 // 지도를 표시할 div와  지도 옵션으로  지도를 생성합니다
 var map = new kakao.maps.Map(mapContainer, mapOption);
-
 // 마커가 표시될 위치입니다
-var markerPosition  = new kakao.maps.LatLng(33.450701, 126.570667); 
+var markerPosition  = new kakao.maps.LatLng(LAT, LNG);
 
 // 마커를 생성합니다
 var marker = new kakao.maps.Marker({
@@ -31,8 +36,77 @@ var marker = new kakao.maps.Marker({
 // 마커가 지도 위에 표시되도록 설정합니다
 marker.setMap(map);
 
-// 아래 코드는 지도 위의 마커를 제거하는 코드입니다
-// marker.setMap(null);    
+// 마커를 클릭했을 때 마커 위에 표시할 인포윈도우를 생성합니다
+var iwContent = '<div style="padding:5px;"><a href="https://www.kit.ac.kr/" target="_blank">https://www.kit.ac.kr/</a></div>', // 인포윈도우에 표출될 내용으로 HTML 문자열이나 document element가 가능합니다
+    iwRemoveable = true; // removeable 속성을 true 로 설정하면 인포윈도우를 닫을 수 있는 x버튼이 표시됩니다
+
+// 인포윈도우를 생성합니다
+var infowindow = new kakao.maps.InfoWindow({
+    content : iwContent,
+    removable : iwRemoveable
+});
+
+// 마커에 클릭이벤트를 등록합니다
+kakao.maps.event.addListener(marker, 'click', function() {
+      // 마커 위에 인포윈도우를 표시합니다
+      infowindow.open(map, marker);
+});
+// 마커를 표시할 위치와 title 객체 배열입니다
+var positions = [
+    {
+        title: '경남정보대학교',
+        latlng: new kakao.maps.LatLng(LAT, LNG)
+    },
+    {
+        title: '동서대학교',
+        latlng: new kakao.maps.LatLng(35.1461119, 129.0070218)
+    },
+    {
+        title: '부산디지털대학교',
+        latlng: new kakao.maps.LatLng(35.1463906, 129.0095931)
+    },
+    {
+        title: '신라대학교',
+        latlng: new kakao.maps.LatLng(35.16792, 128.9970255)
+    }
+];
+
+// 마커 이미지의 이미지 주소입니다
+var imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png";
+
+// 마커 클러스터러를 생성합니다
+var clusterer = new kakao.maps.MarkerClusterer({
+    map: map, // 마커들을 클러스터로 관리하고 표시할 지도 객체
+    averageCenter: true, // 클러스터에 포함된 마커들의 평균 위치를 클러스터 마커 위치로 설정
+    minLevel: 10 // 클러스터 할 최소 지도 레벨
+    //지도 레벨이 10 이상(=10보다 더 축소된 상태)일 때만 마커들을 클러스터로 묶어서 표시하라는 뜻
+});
+
+// 클러스터러가 관리할 마커들을 담을 배열입니다
+var clusterMarkers = [];
+
+for (var i = 0; i < positions.length; i ++) {
+
+    // 마커 이미지의 이미지 크기 입니다
+    var imageSize = new kakao.maps.Size(24, 35);
+
+    // 마커 이미지를 생성합니다
+    var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
+
+    // 마커를 생성합니다 (클러스터러가 관리할 마커는 map을 지정하지 않습니다)
+    // 마커 생성 시 map: map이 삭제됨
+    var clusterMarker = new kakao.maps.Marker({
+        position: positions[i].latlng, // 마커를 표시할 위치
+        title : positions[i].title, // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
+        image : markerImage // 마커 이미지
+    });
+    // 반복할 때마다 생성된 마커가 배열에 들어갑니다.
+    clusterMarkers.push(clusterMarker);
+}
+
+// 클러스터러에 마커들을 추가합니다
+// 배열에 담긴 모든 마커를 클러스터러가 관리하도록 넘깁니다.
+clusterer.addMarkers(clusterMarkers);
 </script>
 </body>
 </html>
